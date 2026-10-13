@@ -21,8 +21,11 @@ test('config events are in the right order with the right details', () => {
   assert.deepStrictEqual([m.name, b.name, w.name], ['Mehndi', 'Baarat', 'Walima']);
   assert.strictEqual(m.venueName, null);
   assert.strictEqual(m.time, null);
-  assert.strictEqual(b.timeLabel, 'Departure Time');
+  assert.strictEqual(b.timeLabel, 'Departure');
   assert.strictEqual(b.time, '11:00 AM');
+  assert.strictEqual(b.countdownAt, '2026-10-30T11:00:00+05:00');
+  assert.strictEqual(b.countdownBasis, 'departure');
+  assert.strictEqual(b.calendarAt, '2026-10-30T11:00:00+05:00');
   assert.strictEqual(b.startsAt, null);                 // departure is never treated as ceremony start
   assert.strictEqual(w.time, '2:00 PM');
   assert.strictEqual(w.startsAt, '2026-10-31T14:00:00+05:00');
@@ -46,7 +49,13 @@ test('one second before the Mehndi day starts', () => {
 test('moves on to the Baarat once the Mehndi day has begun', () => {
   const s = L.getCountdownState(cfg.events, at('2026-10-29T10:00:00+05:00'));
   assert.strictEqual(s.event.id, 'baarat');
-  assert.deepStrictEqual(s.parts, { days: 0, hours: 14, minutes: 0, seconds: 0 });
+  assert.deepStrictEqual(s.parts, { days: 1, hours: 1, minutes: 0, seconds: 0 });
+});
+
+test('Baarat countdown reaches departure at 11:00 AM PKT', () => {
+  const s = L.getCountdownState(cfg.events, at('2026-10-30T10:59:59+05:00'));
+  assert.strictEqual(s.event.id, 'baarat');
+  assert.deepStrictEqual(s.parts, { days: 0, hours: 0, minutes: 0, seconds: 1 });
 });
 
 test('moves on to the Walima (2:00 PM) after the Baarat day begins', () => {
@@ -58,6 +67,7 @@ test('moves on to the Walima (2:00 PM) after the Baarat day begins', () => {
 test('after the Walima start: finished message state, never negative', () => {
   assert.strictEqual(L.getCountdownState(cfg.events, at('2026-10-31T14:00:00+05:00')).status, 'finished');
   assert.strictEqual(L.getCountdownState(cfg.events, at('2027-01-01T00:00:00+05:00')).status, 'finished');
+  assert.strictEqual(cfg.countdown.finishedMessage, 'Three beautiful days, countless precious memories. Thank you for celebrating with us.');
 });
 
 test('result is identical regardless of how the instant is written (timezone safe)', () => {
@@ -93,9 +103,10 @@ test('calendar file is valid and contains only confirmed details', () => {
   assert.ok(!/[^\r]\n/.test(ics), 'every line break must be CRLF');
   ics.split('\r\n').forEach((l) => assert.ok(l.length <= 75, 'line too long: ' + l));
   assert.ok(ics.includes('DTSTART;VALUE=DATE:20261029'));      // Mehndi: all-day
-  assert.ok(ics.includes('DTSTART;VALUE=DATE:20261030'));      // Baarat: all-day (no invented start)
+  assert.ok(ics.includes('DTSTART:20261030T060000Z'));         // Baarat departure: 11:00 AM PKT
+  assert.ok(!ics.includes('DTSTART;VALUE=DATE:20261030'));
   assert.ok(ics.includes('DTSTART:20261031T090000Z'));         // Walima: 2:00 PM PKT = 09:00 UTC
-  assert.ok(ics.includes('Departure Time: 11:00 AM'));
+  assert.ok(ics.includes('Departure: 11:00 AM'));
   const mehndi = ics.split('BEGIN:VEVENT')[1];
   assert.ok(!mehndi.includes('LOCATION'), 'Mehndi must have no invented venue');
   assert.ok(mehndi.includes('Venue details to be announced'));

@@ -95,6 +95,7 @@
 
     cfg.events.forEach(function (ev) {
       var desc = [];
+      var calendarStart = ev.startsAt || ev.calendarAt;
       if (ev.time && ev.timeLabel) desc.push(ev.timeLabel + ': ' + ev.time);
       if (!ev.venueName) desc.push('Venue details to be announced.');
       if (!ev.time) desc.push('Time to be announced.');
@@ -102,8 +103,8 @@
       lines.push('BEGIN:VEVENT');
       lines.push('UID:' + ev.id + '-' + icsDate(ev.date) + '@obaid-samra-wedding');
       lines.push('DTSTAMP:' + stamp);
-      if (ev.startsAt) {
-        lines.push('DTSTART:' + icsUtc(Date.parse(ev.startsAt)));
+      if (calendarStart) {
+        lines.push('DTSTART:' + icsUtc(Date.parse(calendarStart)));
       } else {
         lines.push('DTSTART;VALUE=DATE:' + icsDate(ev.date));
         lines.push('DTEND;VALUE=DATE:' + nextDay(ev.date));

@@ -1,7 +1,7 @@
 # Obaid & Samra - Wedding Invitation Website
 
-A minimal, luxury digital invitation for **Obaid Ur Rehman & Samra Younas**
-(Mehndi 29 Oct, Baarat 30 Oct, Walima 31 Oct 2026).
+A restrained, editorial digital invitation for **Obaid Ur Rehman & Samra Younas**
+(Mehndi 29 Oct, Baarat 30 Oct, Walima 31 Oct 2026), using warm white, charcoal and champagne details.
 
 Mobile-first and responsive, with a live countdown (Pakistan Standard Time),
 event cards, Google Maps directions, and a "Save Our Wedding Dates" calendar file.
@@ -91,11 +91,11 @@ startsAt: '2026-10-29T19:00:00+05:00',
 
 - Always uses Pakistan Standard Time (`+05:00`), so it is correct on any device in any country.
 - Counts down to the **next** event and moves on automatically.
+- The **Mehndi** countdown uses midnight on 29 October as a clearly identified fallback because its time is unconfirmed.
+- The **Baarat** countdown targets the confirmed **11:00 AM departure**, not a ceremony start.
 - The **Walima** counts to its confirmed **2:00 PM**.
-- **Mehndi** and **Baarat** have no confirmed start time yet, so the countdown goes to 12:00 AM
-  at the start of that day. The page says this openly and never presents it as a ceremony time.
-  The Baarat's 11:00 AM is shown only as the **Departure Time**.
-- After the Walima begins, it shows: *"The celebrations have begun. Thank you for being part of our story."*
+- Once all countdown targets have passed, it shows: *"Three beautiful days, countless precious memories. Thank you for celebrating with us."*
+- When the Mehndi time is confirmed, update its `countdownAt` and `countdownBasis` in `public/js/config.js`; the calendar keeps unknown details unspecified.
 
 ## 5. Check that everything works
 
@@ -103,7 +103,7 @@ startsAt: '2026-10-29T19:00:00+05:00',
 node test/logic.test.js
 ```
 
-Runs 11 checks on dates, weekdays, countdown behaviour, timezone safety and the calendar file.
+Runs 12 checks on dates, weekdays, countdown transitions, timezone safety and the calendar file.
 
 ## Project layout
 
@@ -114,7 +114,7 @@ server.js              tiny local web server (no dependencies)
 start.bat / start.sh   one-click launchers
 public/
   index.html           page shell + reusable line-art (arches, botanicals)
-  css/style.css        design system (ivory, sage, olive, champagne, espresso, antique gold)
+  css/style.css        design system (warm white, charcoal, champagne, muted neutrals)
   js/config.js         ALL wedding details (edit this)
   js/logic.js          date, countdown and calendar logic
   js/app.js            components: Hero, Countdown, Couple, Events, Venues, Invitation, Final
@@ -123,8 +123,8 @@ test/logic.test.js     automated checks
 
 ## Notes
 
-- Fonts (Cormorant Garamond and Inter) load from Google Fonts when online and fall back to
-  Georgia / system fonts offline.
+- Fonts (Cormorant Garamond, Inter and Amiri for the Arabic Basmala) load from Google Fonts
+  when online and fall back to system serif fonts offline.
 - Directions use a Google Maps *search* for the venue name and address. No GPS coordinates are
   invented; please check the pin lands in the right place.
 - Animations are gentle and switch off for visitors who prefer reduced motion.

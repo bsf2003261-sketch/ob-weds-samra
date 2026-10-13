@@ -11,14 +11,15 @@
  *
  *  countdownAt   The moment the countdown counts toward.
  *  countdownBasis
- *      'start' = a confirmed start time (used for the Walima, 2:00 PM)
+ *      'start' = a confirmed event time
+ *      'departure' = the Baarat departure time, not its ceremony start
  *      'day'   = no confirmed start time yet, so we count to 12:00 AM
  *                (midnight) at the start of that day, Pakistan time.
  *                The page says this openly and never shows it as a
  *                ceremony time.
- *  startsAt      Confirmed start time. Only set when it is really known.
- *                It is the only thing that puts a clock time in the
- *                downloadable calendar file.
+ *  startsAt      Confirmed event time. Only set when it is really known.
+ *  calendarAt    A confirmed calendar time that is not an event start,
+ *                such as the Baarat departure time.
  *  endsAt        When the event is considered over (used by the calendar
  *                logic and for documentation; not shown to guests).
  *
@@ -50,18 +51,24 @@
     },
 
     countdown: {
-      heading: 'Counting Down to Our Celebration',
-      finishedMessage: 'The celebrations have begun. Thank you for being part of our story.'
+      heading: 'Counting Down to Our Celebrations',
+      finishedMessage: 'Three beautiful days, countless precious memories. Thank you for celebrating with us.'
     },
 
     coupleSection: {
-      heading: 'Two Hearts, One Beautiful Journey',
-      body: 'With grateful hearts and the blessings of our families, we look forward to beginning a beautiful new chapter together. Your presence and prayers will make our celebrations even more meaningful.'
+      heading: 'A Beautiful New Beginning',
+      body: 'With grateful hearts and the blessings of our families, we look forward to beginning a beautiful new chapter together. Your presence, prayers, and good wishes will make these special moments even more meaningful.'
     },
 
-    eventsSection: { heading: 'Our Wedding Celebrations' },
+    eventsSection: {
+      heading: 'Our Wedding Celebrations',
+      lead: 'Three days of love, blessings, and togetherness.'
+    },
 
-    venuesSection: { heading: 'Find Your Way to Our Celebrations' },
+    venuesSection: {
+      heading: 'Find Your Way',
+      lead: 'We look forward to celebrating these special moments with you.'
+    },
 
     invitation: {
       heading: 'Your Presence Is Our Greatest Gift',
@@ -75,7 +82,7 @@
     final: {
       heading: 'With Love & Gratitude',
       closing: 'Looking forward to celebrating with you.',
-      calendarButton: 'Save Our Wedding Dates'
+      calendarButton: 'Save the Wedding Dates'
     },
 
     events: [
@@ -83,12 +90,13 @@
         id: 'mehndi',
         name: 'Mehndi',
         date: '2026-10-29',
-        accent: 'sage',
+        accent: 'white',
         motif: 'floral',
-        timeLabel: 'Time',
+        timeLabel: 'Timing',
         time: null,                      // not confirmed
         venueName: null,                 // not confirmed
         address: null,
+        countdownLabel: 'Mehndi',
         countdownAt: '2026-10-29T00:00:00+05:00',
         countdownBasis: 'day',
         startsAt: null,
@@ -100,12 +108,14 @@
         date: '2026-10-30',
         accent: 'champagne',
         motif: 'arch',
-        timeLabel: 'Departure Time',     // 11:00 AM is the departure, NOT the ceremony start
+        timeLabel: 'Departure',          // 11:00 AM is not the ceremony start
         time: '11:00 AM',
         venueName: 'Al-Rehman Marque',
         address: 'Faisalabad Road, Chiniot, Pakistan',
-        countdownAt: '2026-10-30T00:00:00+05:00',
-        countdownBasis: 'day',
+        countdownAt: '2026-10-30T11:00:00+05:00',
+        countdownBasis: 'departure',
+        countdownLabel: 'Baarat Departure',
+        calendarAt: '2026-10-30T11:00:00+05:00',
         startsAt: null,                  // ceremony start time not confirmed
         endsAt: '2026-10-31T00:00:00+05:00'
       },
@@ -113,7 +123,7 @@
         id: 'walima',
         name: 'Walima',
         date: '2026-10-31',
-        accent: 'ivory',
+        accent: 'champagne',
         motif: 'sprig',
         timeLabel: 'Time',
         time: '2:00 PM',
@@ -122,6 +132,7 @@
         countdownAt: '2026-10-31T14:00:00+05:00',
         countdownBasis: 'start',
         startsAt: '2026-10-31T14:00:00+05:00',
+        countdownLabel: 'Walima',
         endsAt: '2026-11-01T00:00:00+05:00'
       }
     ]

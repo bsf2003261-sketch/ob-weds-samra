@@ -52,11 +52,7 @@
 
   // ---------- components ----------
   function Hero() {
-    var corners = ['tl', 'tr', 'bl', 'br'].map(function (pos) {
-      return art('corner', 'corner corner--' + pos, '0 0 220 220');
-    });
-
-    return h('section', { class: 'hero', id: 'top', 'aria-labelledby': 'couple-names' }, corners.concat([
+    return h('section', { class: 'hero', id: 'top', 'aria-labelledby': 'couple-names' }, [
       art('arch', 'hero__arch', '0 -10 320 480'),
       h('div', { class: 'hero__inner' }, [
         h('p', { class: 'hero__bismillah fade fade-1', lang: 'ar', dir: 'rtl', text: C.hero.bismillah }),
@@ -74,7 +70,7 @@
       h('a', { class: 'scroll-cue fade fade-6', href: '#countdown', 'aria-label': 'Scroll down to the countdown' }, [
         h('span', { class: 'scroll-cue__line' })
       ])
-    ]));
+    ]);
   }
 
   function Countdown() {
@@ -93,6 +89,7 @@
     var note = h('p', { class: 'countdown__note' });
     var finished = h('p', { class: 'countdown__finished', text: C.countdown.finishedMessage, hidden: true });
     var summary = h('p', { class: 'sr-only', 'aria-live': 'polite' });
+    var timer = null;
 
     var section = h('section', { class: 'section countdown', id: 'countdown', 'aria-labelledby': 'countdown-title' }, [
       heading(2, C.countdown.heading).cloneNode(true),
@@ -101,21 +98,38 @@
     section.querySelector('h2').id = 'countdown-title';
 
     function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function unitText(n, unit) { return n + ' ' + unit + (n === 1 ? '' : 's'); }
     var lastSummaryMinute = -1;
+
+    function stopTimer() {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function startTimer() {
+      if (timer !== null || document.hidden) return;
+      timer = setInterval(function () {
+        if (!tick()) stopTimer();
+      }, 1000);
+    }
 
     function tick() {
       var s = L.getCountdownState(C.events, Date.now());
 
       if (s.status === 'finished') {
         grid.hidden = true; nextLine.hidden = true; note.hidden = true; finished.hidden = false;
+        summary.textContent = C.countdown.finishedMessage;
         return false;
       }
 
       grid.hidden = false; nextLine.hidden = false; finished.hidden = true;
       var ev = s.event, d = L.formatDate(ev.date);
+      var countdownLabel = ev.countdownLabel || ev.name;
       nextLine.textContent = '';
-      nextLine.appendChild(document.createTextNode('Next: '));
-      nextLine.appendChild(h('strong', { text: ev.name }));
+      nextLine.appendChild(document.createTextNode('Next celebration: '));
+      nextLine.appendChild(h('strong', { text: countdownLabel }));
       nextLine.appendChild(document.createTextNode(' · ' + d.weekday + ', ' + d.text));
 
       unitEls.days.textContent = pad(s.parts.days);
@@ -125,23 +139,35 @@
 
       if (ev.countdownBasis === 'day') {
         note.hidden = false;
-        note.textContent = 'Counting to the start of this day in Pakistan Standard Time. The exact start time has not been announced.';
+        note.textContent = 'Counting to midnight at the start of this day in Pakistan Standard Time as a fallback. The Mehndi time is not confirmed.';
+      } else if (ev.countdownBasis === 'departure') {
+        note.hidden = false;
+        note.textContent = 'Counting to the Baarat departure at ' + ev.time + ' Pakistan Standard Time. This is not the ceremony start.';
       } else {
         note.hidden = false;
-        note.textContent = 'Counting to ' + ev.time + ' Pakistan Standard Time.';
+        note.textContent = 'Counting to the Walima at ' + ev.time + ' Pakistan Standard Time.';
       }
 
       // keep screen-reader announcements calm: update once a minute
       var minuteKey = s.parts.days * 1440 + s.parts.hours * 60 + s.parts.minutes;
       if (minuteKey !== lastSummaryMinute) {
         lastSummaryMinute = minuteKey;
-        summary.textContent = s.parts.days + ' days, ' + s.parts.hours + ' hours and ' + s.parts.minutes + ' minutes until ' + ev.name + '.';
+        summary.textContent = unitText(s.parts.days, 'day') + ', ' + unitText(s.parts.hours, 'hour') +
+          ' and ' + unitText(s.parts.minutes, 'minute') + ' until ' + countdownLabel + '.';
       }
       return true;
     }
 
-    tick();
-    setInterval(tick, 1000);
+    if (tick()) startTimer();
+    document.addEventListener('visibilitychange', function () {
+      stopTimer();
+      if (!document.hidden && tick()) startTimer();
+    });
+    window.addEventListener('pagehide', stopTimer);
+    window.addEventListener('pageshow', function () {
+      stopTimer();
+      if (!document.hidden && tick()) startTimer();
+    });
     return section;
   }
 
@@ -149,7 +175,7 @@
     return h('section', { class: 'section couple', id: 'couple', 'aria-labelledby': 'couple-title' }, [
       h('div', { class: 'couple__art reveal' }, [art('arch', 'couple__arch', '0 -10 320 480')]),
       h('div', { class: 'couple__text' }, [
-        heading(2, C.coupleSection.heading),
+        (function () { var el = heading(2, C.coupleSection.heading); el.querySelector('h2').id = 'couple-title'; return el; })(),
         h('p', { class: 'couple__names reveal', text: C.couple.groom + ' & ' + C.couple.bride }),
         rule(),
         h('p', { class: 'prose reveal', text: C.coupleSection.body })
@@ -162,11 +188,17 @@
     var venue = ev.venueName
       ? [h('span', { class: 'event__venue-name', text: ev.venueName }),
          ev.address ? h('span', { class: 'event__venue-address', text: ev.address }) : null]
-      : [h('span', { class: 'event__tba', text: 'Venue details to be announced' })];
+      : [h('span', { class: 'event__tba', text: 'To be announced' })];
 
     var timeValue = ev.time
-      ? [h('span', { text: ev.time })]
+      ? [h('time', { datetime: ev.calendarAt || ev.startsAt || ev.countdownAt, text: ev.time })]
       : [h('span', { class: 'event__tba', text: 'To be announced' })];
+    var facts = !ev.time && !ev.venueName
+      ? h('p', { class: 'event__tba event__tba--combined', text: 'Venue and timing to be announced.' })
+      : h('dl', { class: 'event__facts' }, [
+          h('div', {}, [h('dt', { text: ev.timeLabel || 'Time' }), h('dd', {}, timeValue)]),
+          h('div', {}, [h('dt', { text: 'Venue' }), h('dd', {}, venue)])
+        ]);
 
     var motif = ev.motif === 'arch'
       ? art('arch', 'event__motif event__motif--arch', '0 -10 320 480')
@@ -180,31 +212,30 @@
       h('h3', { class: 'event__name', id: 'event-' + ev.id, text: ev.name }),
       rule(),
       h('p', { class: 'event__weekday', text: d.weekday }),
-      h('p', { class: 'event__date', text: d.text }),
-      h('dl', { class: 'event__facts' }, [
-        h('div', {}, [h('dt', { text: ev.timeLabel || 'Time' }), h('dd', {}, timeValue)]),
-        h('div', {}, [h('dt', { text: 'Venue' }), h('dd', {}, venue)])
-      ])
+      h('time', { class: 'event__date', datetime: ev.date, text: d.text }),
+      facts
     ]);
   }
 
   function Events() {
     return h('section', { class: 'section events', id: 'events', 'aria-labelledby': 'events-title' }, [
       (function () { var el = heading(2, C.eventsSection.heading); el.querySelector('h2').id = 'events-title'; return el; })(),
+      h('p', { class: 'section__lead events__lead', text: C.eventsSection.lead }),
       h('div', { class: 'events__grid' }, C.events.map(EventCard))
     ]);
   }
 
   function VenueBlock(ev) {
     var url = L.mapsUrl(ev.venueName, ev.address);
+    var buttonText = ev.id === 'baarat' ? 'Get Baarat Directions' : 'Get Walima Directions';
     return h('article', { class: 'venue reveal' }, [
       h('p', { class: 'venue__event', text: ev.name + ' Venue' }),
       h('h3', { class: 'venue__name', text: ev.venueName }),
       h('p', { class: 'venue__address', text: ev.address }),
       h('a', {
         class: 'btn', href: url, target: '_blank', rel: 'noopener noreferrer',
-        'aria-label': 'Get directions to ' + ev.venueName + ' on Google Maps (opens in a new tab)'
-      }, ['Get Directions'])
+        'aria-label': buttonText + ' to ' + ev.venueName + ' on Google Maps (opens in a new tab)'
+      }, [buttonText])
     ]);
   }
 
@@ -214,6 +245,7 @@
 
     var kids = [
       (function () { var el = heading(2, C.venuesSection.heading); el.querySelector('h2').id = 'venues-title'; return el; })(),
+      h('p', { class: 'section__lead venues__lead', text: C.venuesSection.lead }),
       h('div', { class: 'venues__grid' }, confirmed.map(VenueBlock))
     ];
 
@@ -223,8 +255,6 @@
         ' venue: to be announced.'
       ]));
     });
-    kids.push(h('p', { class: 'venues__hint reveal', text: 'Directions open in Google Maps in a new tab.' }));
-
     return h('section', { class: 'section venues', id: 'venues', 'aria-labelledby': 'venues-title' }, kids);
   }
 
@@ -262,7 +292,7 @@
       art('sprig', 'final__sprig reveal', '0 0 72 28'),
       h('h2', { class: 'h2 reveal', id: 'final-title', text: C.final.heading }),
       h('p', { class: 'final__names reveal', text: C.couple.groom + ' & ' + C.couple.bride }),
-      h('p', { class: 'final__dates reveal', text: C.dateRangeCompact }),
+      h('p', { class: 'final__dates reveal', text: C.dateRangeLabel }),
       rule(),
       h('p', { class: 'prose reveal', text: C.final.closing }),
       h('div', { class: 'reveal' }, [btn]),
@@ -272,14 +302,16 @@
 
   function Footer() {
     return h('footer', { class: 'footer' }, [
-      h('p', { text: C.shortNames + ' · ' + C.dateRangeCompact })
+      h('p', { text: C.couple.groom + ' & ' + C.couple.bride }),
+      h('p', { text: C.dateRangeCompact })
     ]);
   }
 
   // ---------- mount ----------
   var app = document.getElementById('app');
   app.textContent = '';
-  [Hero(), Countdown(), Couple(), Events(), Venues(), Invitation(), Final(), Footer()].forEach(function (n) { app.appendChild(n); });
+  [Hero(), Countdown(), Couple(), Events(), Venues(), Invitation(), Final()].forEach(function (n) { app.appendChild(n); });
+  document.body.appendChild(Footer());
   document.title = C.pageTitle;
 
   // ---------- gentle reveal on scroll ----------
